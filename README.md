@@ -1,6 +1,6 @@
 # Gab's Crypto Predictor
 
-![Screenshot](app/static/Gab's Crypto Predictor.png)
+![Screenshot](crypto-predictor-screensho.png)
 
 A hybrid machine learning system for cryptocurrency price prediction using LSTM and Random Forest models.
 
