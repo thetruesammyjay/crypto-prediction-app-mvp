@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gab's Crypto Predictor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4a6fa5;
+            --secondary: #6b8cae;
+            --accent: #ff7e5f;
+            --dark: #2b3a4a;
+            --light: #f0f4f8;
+            --success: #4CAF50;
+            --warning: #FFC107;
+            --danger: #F44336;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            color: var(--dark);
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        header {
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            color: var(--dark);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--primary);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .prediction-card {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: left;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .chart-container {
+            height: 400px;
+            margin-bottom: 2rem;
+        }
+        
+        .prediction-result {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-top: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        
+        select {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 2px solid #DDDDDD;
+            font-size: 1rem;
+            width: 100%;
+            max-width: 400px;
+            background-color: white;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button i {
+            margin-right: 0.5rem;
+        }
+        
+        button:hover {
+            background-color: var(--secondary);
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            padding: 0.8rem;
+            border-radius: 8px;
+        }
+        
+        .status-info {
+            background-color: rgba(74, 111, 165, 0.1);
+            color: var(--primary);
+        }
+        
+        .status-success {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+        }
+        
+        .status-warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--warning);
+        }
+        
+        .status-error {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--danger);
+        }
+        
+        .model-badge {
+            display: inline-block;
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        .lstm-badge {
+            background-color: rgba(74, 111, 165, 0.2);
+            color: var(--primary);
+        }
+        
+        .rf-badge {
+            background-color: rgba(255, 126, 95, 0.2);
+            color: var(--accent);
+        }
+        
+        .hybrid-badge {
+            background: linear-gradient(90deg, rgba(74, 111, 165, 0.2), rgba(255, 126, 95, 0.2));
+            color: var(--dark);
+        }
+        
+        .prediction-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .prediction-item {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .prediction-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        
+        .positive {
+            color: var(--success);
+        }
+        
+        .negative {
+            color: var(--danger);
+        }
+        
+        .confidence-meter {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .confidence-level {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--warning));
+        }
+        
+        footer {
+            margin-top: auto;
+            padding-top: 2rem;
+            font-size: 0.9rem;
+            color: var(--dark);
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .prediction-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .prediction-result {
+                font-size: 1rem;
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Gab's Crypto Predictor</h1>
+            <p class="subtitle">Hybrid Machine Learning Price Prediction System</p>
+        </header>
+        
+        <div class="prediction-card">
+            <div class="form-group">
+                <label for="crypto-select"><i class="fas fa-coins"></i> Cryptocurrency</label>
+                <select id="crypto-select">
+                    <option value="bitcoin">Bitcoin (BTC)</option>
+                    <option value="ethereum">Ethereum (ETH)</option>
+                    <option value="binancecoin">Binance Coin (BNB)</option>
+                    <option value="solana">Solana (SOL)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="model-select"><i class="fas fa-brain"></i> Prediction Model</label>
+                <select id="model-select">
+                    <option value="hybrid">Hybrid Model (Recommended)</option>
+                    <option value="lstm">LSTM Neural Network</option>
+                    <option value="rf">Random Forest</option>
+                </select>
+            </div>
+            
+            <div class="status-indicator status-info" id="status-indicator">
+                <i class="fas fa-info-circle"></i>
+                <span id="status-text">Ready to predict</span>
+            </div>
+            
+            <div class="button-container">
+                <button id="predict-btn">
+                    <i class="fas fa-calculator"></i> Predict Price
+                </button>
+            </div>
+        </div>
+        
+        <div class="prediction-card" id="results-card" style="display: none;">
+            <h2><i class="fas fa-chart-bar"></i> Prediction Results</h2>
+            <div class="chart-container" id="chart-container"></div>
+            
+            <div class="prediction-result" id="prediction-result">
+                <div class="prediction-grid" id="prediction-grid"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 Delta State University - Computer Science Project</p>
+            <p>Developed by Gabriel | Powered by Machine Learning</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // DOM elements
+        const predictBtn = document.getElementById('predict-btn');
+        const cryptoSelect = document.getElementById('crypto-select');
+        const modelSelect = document.getElementById('model-select');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const resultsCard = document.getElementById('results-card');
+        const predictionGrid = document.getElementById('prediction-grid');
+        const chartContainer = document.getElementById('chart-container');
+        
+        // Chart instance
+        let priceChart = null;
+        
+        // Update status display
+        function updateStatus(type, message, icon = null) {
+            // Remove all status classes
+            statusIndicator.classList.remove('status-info', 'status-success', 'status-warning', 'status-error');
+            
+            // Add new status class
+            statusIndicator.classList.add(`status-${type}`);
+            
+            // Update text and icon
+            statusText.textContent = message;
+            
+            if (icon) {
+                statusIndicator.innerHTML = `<i class="fas fa-${icon} ${icon === 'circle-notch' ? 'loading' : ''}"></i> ${message}`;
+            }
+        }
+        
+        // Format price with dollar sign and commas
+        function formatPrice(price) {
+            return '$' + price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        // Calculate percentage change
+        function calculateChange(current, predicted) {
+            return ((predicted - current) / current * 100).toFixed(2);
+        }
+        
+        // Render prediction results
+        function renderResults(data) {
+            // Clear previous results
+            predictionGrid.innerHTML = '';
+            
+            // Add prediction items for each timeframe
+            data.predictions.forEach(prediction => {
+                const change = calculateChange(data.current_price, prediction.price);
+                const changeClass = change >= 0 ? 'positive' : 'negative';
+                const changeSymbol = change >= 0 ? '+' : '';
+                
+                const predictionItem = document.createElement('div');
+                predictionItem.className = 'prediction-item';
+                predictionItem.innerHTML = `
+                    <h3>${prediction.timeframe} Prediction</h3>
+                    <div class="prediction-value ${changeClass}">
+                        ${formatPrice(prediction.price)}
+                        <small>(${changeSymbol}${change}%)</small>
+                    </div>
+                    <div>Confidence: ${prediction.confidence}%</div>
+                    <div class="confidence-meter">
+                        <div class="confidence-level" style="width: ${prediction.confidence}%"></div>
+                    </div>
+                `;
+                
+                predictionGrid.appendChild(predictionItem);
+            });
+            
+            // Render chart
+            renderChart(data.history, data.predictions);
+        }
+        
+        // Render price chart
+        function renderChart(historyData, predictions) {
+            // Destroy previous chart if exists
+            if (priceChart) {
+                priceChart.destroy();
+            }
+            
+            // Create canvas element if it doesn't exist
+            if (!document.getElementById('price-chart')) {
+                const canvas = document.createElement('canvas');
+                canvas.id = 'price-chart';
+                chartContainer.innerHTML = '';
+                chartContainer.appendChild(canvas);
+            }
+            
+            const ctx = document.getElementById('price-chart').getContext('2d');
+            
+            // Prepare chart data
+            const labels = historyData.map((_, i) => `T-${historyData.length - i}h`);
+            const datasets = [{
+                label: 'Historical Price',
+                data: historyData,
+                borderColor: 'rgba(74, 111, 165, 1)',
+                backgroundColor: 'rgba(74, 111, 165, 0.1)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: true
+            }];
+            
+            // Add prediction points
+            predictions.forEach(pred => {
+                const predIndex = pred.timeframe === '24h' ? 24 : 168;
+                datasets.push({
+                    label: `${pred.timeframe} Prediction`,
+                    data: [...Array(historyData.length - 1).fill(null), pred.price],
+                    borderColor: pred.timeframe === '24h' ? 'rgba(255, 126, 95, 1)' : 'rgba(76, 175, 80, 1)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointBackgroundColor: pred.timeframe === '24h' ? 'rgba(255, 126, 95, 1)' : 'rgba(76, 175, 80, 1)',
+                    pointRadius: 5
+                });
+            });
+            
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Price (USD)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Historical Hours'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatPrice(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Handle predict button click
+        predictBtn.addEventListener('click', async function() {
+            const crypto = cryptoSelect.value;
+            const model = modelSelect.value;
+            
+            // Disable button and show loading state
+            predictBtn.disabled = true;
+            updateStatus('info', 'Fetching market data...', 'circle-notch');
+            
+            try {
+                // Make API request
+                const response = await fetch(`/predict?crypto=${crypto}&model=${model}`);
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Show results
+                resultsCard.style.display = 'block';
+                renderResults(data);
+                updateStatus('success', 'Prediction complete!', 'check-circle');
+                
+            } catch (error) {
+                console.error('Prediction error:', error);
+                updateStatus('error', `Error: ${error.message}`, 'exclamation-circle');
+                
+            } finally {
+                predictBtn.disabled = false;
+            }
+        });
+        
+        // Initialize with default values
+        updateStatus('info', 'Ready to predict', 'info-circle');
+    </script>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gab's Crypto Predictor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4a6fa5;     /* Deep blue */
+            --secondary: #6b8cae;   /* Medium blue */
+            --accent: #ff7e5f;      /* Coral accent */
+            --dark: #2b3a4a;        /* Dark navy */
+            --light: #f0f4f8;       /* Light blue background */
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        header {
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            color: var(--dark);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        .prediction-card {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: left;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .chart-container {
+            height: 400px;
+            margin-bottom: 2rem;
+        }
+        
+        .prediction-result {
+            font-size: 1.2rem;
+            color: var(--dark);
+            line-height: 1.6;
+            margin-top: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        select, input {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 2px solid #DDDDDD;
+            font-size: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button i {
+            margin-right: 0.5rem;
+        }
+        
+        button:hover {
+            background-color: var(--secondary);
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        #predict-btn {
+            background-color: var(--primary);
+        }
+        
+        #clear-btn {
+            background-color: var(--accent);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            font-weight: bold;
+        }
+        
+        .status-indicator i {
+            margin-right: 0.5rem;
+        }
+        
+        footer {
+            margin-top: auto;
+            padding-top: 2rem;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .prediction-result {
+                font-size: 1rem;
+            }
+            
+            .button-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+
+        /* Loading animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+        
+        .model-badge {
+            display: inline-block;
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        .lstm-badge {
+            background-color: rgba(74, 111, 165, 0.2);
+            color: var(--primary);
+        }
+        
+        .rf-badge {
+            background-color: rgba(255, 126, 95, 0.2);
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Gab's Crypto Predictor</h1>
+            <p class="subtitle">Hybrid LSTM + Random Forest Price Prediction System</p>
+        </header>
+        
+        <!-- Prediction Form -->
+        <div class="prediction-card">
+            <div class="form-group">
+                <label for="crypto-select"><i class="fas fa-coins"></i> Select Cryptocurrency</label>
+                <select id="crypto-select">
+                    <option value="BTC">Bitcoin (BTC)</option>
+                    <option value="ETH">Ethereum (ETH)</option>
+                    <option value="SOL">Solana (SOL)</option>
+                    <option value="ADA">Cardano (ADA)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="timeframe"><i class="fas fa-clock"></i> Prediction Timeframe</label>
+                <select id="timeframe">
+                    <option value="1">1 Hour</option>
+                    <option value="24" selected>24 Hours</option>
+                    <option value="168">7 Days</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="model-select"><i class="fas fa-brain"></i> Prediction Model</label>
+                <select id="model-select">
+                    <option value="hybrid">Hybrid Model (Recommended)</option>
+                    <option value="lstm">LSTM Only</option>
+                    <option value="random_forest">Random Forest Only</option>
+                </select>
+            </div>
+            
+            <div class="status-indicator" id="status-indicator">
+                <i class="fas fa-info-circle"></i>
+                <span id="status-text">Ready to predict</span>
+            </div>
+            
+            <div class="button-container">
+                <button id="predict-btn">
+                    <i class="fas fa-calculator"></i> Predict Price
+                </button>
+                <button id="clear-btn">
+                    <i class="fas fa-eraser"></i> Clear
+                </button>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="prediction-card" id="results-card" style="display: none;">
+            <h2><i class="fas fa-chart-bar"></i> Prediction Results</h2>
+            <div class="chart-container" id="chart-container">
+                <!-- Chart will be rendered here -->
+            </div>
+            <div class="prediction-result" id="prediction-result">
+                <!-- Prediction details will appear here -->
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 Delta State University of Science and Technology - Computer Science Project</p>
+            <p>Developed by Gabriel | Powered by Machine Learning</p>
+        </footer>
+    </div>
+    
+    <!-- Include Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // DOM elements
+        const predictBtn = document.getElementById('predict-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const cryptoSelect = document.getElementById('crypto-select');
+        const timeframeSelect = document.getElementById('timeframe');
+        const modelSelect = document.getElementById('model-select');
+        const statusText = document.getElementById('status-text');
+        const statusIndicator = document.getElementById('status-indicator');
+        const resultsCard = document.getElementById('results-card');
+        const predictionResult = document.getElementById('prediction-result');
+        const chartContainer = document.getElementById('chart-container');
+        
+        // Chart instance
+        let priceChart = null;
+        
+        // Sample data - replace with actual API calls in your implementation
+        const sampleData = {
+            BTC: {
+                dates: ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00', 'Now'],
+                prices: [42000, 42500, 43000, 43500, 44000, 44500, 45000],
+                prediction: 45500,
+                confidence: 87
+            },
+            ETH: {
+                dates: ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00', 'Now'],
+                prices: [2500, 2550, 2600, 2650, 2700, 2750, 2800],
+                prediction: 2850,
+                confidence: 82
+            }
+        };
+        
+        // Initialize the app
+        function initializeApp() {
+            // Set up event listeners
+            predictBtn.addEventListener('click', predictPrice);
+            clearBtn.addEventListener('click', clearResults);
+        }
+        
+        // Predict price function
+        function predictPrice() {
+            const crypto = cryptoSelect.value;
+            const timeframe = timeframeSelect.value;
+            const model = modelSelect.value;
+            
+            // Show loading state
+            statusText.textContent = 'Processing prediction...';
+            statusIndicator.innerHTML = '<i class="fas fa-circle-notch loading"></i> Analyzing market data';
+            predictBtn.disabled = true;
+            
+            // Simulate API call delay - replace with actual fetch to your backend
+            setTimeout(() => {
+                // For demo purposes, we'll use sample data
+                const data = sampleData[crypto];
+                
+                // Update status
+                statusText.textContent = 'Prediction complete';
+                statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Ready';
+                predictBtn.disabled = false;
+                
+                // Show results
+                displayResults(crypto, data, model, timeframe);
+            }, 2000);
+        }
+        
+        // Display prediction results
+        function displayResults(crypto, data, model, timeframe) {
+            // Show results card
+            resultsCard.style.display = 'block';
+            
+            // Get timeframe text
+            let timeframeText;
+            switch(timeframe) {
+                case '1':
+                    timeframeText = '1 hour';
+                    break;
+                case '24':
+                    timeframeText = '24 hours';
+                    break;
+                case '168':
+                    timeframeText = '7 days';
+                    break;
+                default:
+                    timeframeText = timeframeSelect.options[timeframeSelect.selectedIndex].text;
+            }
+            
+            // Get model text
+            let modelText, modelBadge;
+            switch(model) {
+                case 'hybrid':
+                    modelText = 'Hybrid LSTM + Random Forest';
+                    modelBadge = '<span class="model-badge lstm-badge">LSTM</span><span class="model-badge rf-badge">RF</span>';
+                    break;
+                case 'lstm':
+                    modelText = 'LSTM Neural Network';
+                    modelBadge = '<span class="model-badge lstm-badge">LSTM</span>';
+                    break;
+                case 'random_forest':
+                    modelText = 'Random Forest';
+                    modelBadge = '<span class="model-badge rf-badge">RF</span>';
+                    break;
+            }
+            
+            // Update prediction text
+            predictionResult.innerHTML = `
+                <p><strong>${crypto} Price Prediction</strong></p>
+                <p>Model used: ${modelText} ${modelBadge}</p>
+                <p>Predicted price in ${timeframeText}: 
+                <strong>$${data.prediction.toLocaleString()}</strong></p>
+                <p>Prediction confidence: <strong>${data.confidence}%</strong></p>
+                <p>Current price: $${data.prices[data.prices.length-1].toLocaleString()}</p>
+                <p>Predicted change: <strong>${(((data.prediction - data.prices[data.prices.length-1])/data.prices[data.prices.length-1]*100).toFixed(2))}%</strong></p>
+            `;
+            
+            // Render chart
+            renderChart(data.dates, data.prices, crypto, data.prediction);
+        }
+        
+        // Render price chart
+        function renderChart(dates, prices, crypto, prediction) {
+            // Destroy previous chart if exists
+            if (priceChart) {
+                priceChart.destroy();
+            }
+            
+            // Create canvas element if it doesn't exist
+            if (!document.getElementById('price-chart')) {
+                const canvas = document.createElement('canvas');
+                canvas.id = 'price-chart';
+                chartContainer.innerHTML = '';
+                chartContainer.appendChild(canvas);
+            }
+            
+            const ctx = document.getElementById('price-chart').getContext('2d');
+            
+            // Extend dates array with prediction
+            const extendedDates = [...dates, 'Prediction'];
+            const extendedPrices = [...prices, prediction];
+            
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: extendedDates,
+                    datasets: [{
+                        label: `${crypto} Historical Price (USD)`,
+                        data: prices,
+                        borderColor: 'rgba(74, 111, 165, 1)',
+                        backgroundColor: 'rgba(74, 111, 165, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    },
+                    {
+                        label: 'Predicted Price',
+                        data: [...Array(prices.length).fill(null), prediction],
+                        borderColor: 'rgba(255, 126, 95, 1)',
+                        backgroundColor: 'rgba(255, 126, 95, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointBackgroundColor: 'rgba(255, 126, 95, 1)',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Price (USD)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Clear results
+        function clearResults() {
+            resultsCard.style.display = 'none';
+            statusText.textContent = 'Ready to predict';
+            statusIndicator.innerHTML = '<i class="fas fa-info-circle"></i> Ready';
+            
+            if (priceChart) {
+                priceChart.destroy();
+                priceChart = null;
+            }
+        }
+        
+        // Initialize the app when DOM is loaded
+        window.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>

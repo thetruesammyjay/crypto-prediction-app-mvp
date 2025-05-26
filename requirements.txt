@@ -1,0 +1,42 @@
+# Core dependencies
+flask==3.0.3  # Latest stable with Py3.12 support
+python-dotenv==1.0.1  # Latest stable
+requests==2.31.0  # Stable and compatible
+numpy==1.26.4  # Latest 1.x series, avoids NumPy 2.0 breaking changes
+pandas==2.2.2  # Latest with good NumPy 1.26 compatibility
+gunicorn==21.2.0  # Production WSGI server
+
+# Machine learning
+scikit-learn==1.4.2  # Latest 1.4.x with Py3.12 support
+scipy==1.12.0  # Compatible with NumPy 1.26 and Py3.12
+tensorflow==2.16.1  # First stable release with native Py3.12 support
+keras==3.1.1  # Compatible with TensorFlow 2.16
+
+# Data processing
+python-dateutil==2.9.0.post0  # Required by pandas
+pytz==2024.1  # Timezone support
+
+# API clients
+python-binance==1.0.19  # Already compatible
+pycoingecko==3.1.0  # Updated CoinGecko API client with Py3.12 support
+ccxt==4.2.77  # Unified crypto exchange API
+
+# Development tools
+pytest==8.1.1  # Latest stable with Py3.12 support
+black==24.3.0  # Latest stable formatter
+flake8==7.0.0
+mypy==1.9.0
+pytest-cov==4.1.0
+types-requests==2.31.0.20240311  # Type stubs
+
+# Monitoring
+sentry-sdk==1.44.0  # Error tracking
+prometheus-client==0.20.0  # Metrics
+
+# Caching
+redis==5.0.1  # For production caching
+cachetools==5.3.3  # For local caching
+
+# Security
+cryptography==42.0.5  # For data encryption
+pyjwt==2.8.0  # For API authentication 
