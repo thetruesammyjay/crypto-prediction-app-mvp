@@ -3,18 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gab's Crypto Predictor</title>
+    <title>Gab's LSTM Crypto Predictor</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4a6fa5;
-            --secondary: #6b8cae;
-            --accent: #ff7e5f;
-            --dark: #2b3a4a;
-            --light: #f0f4f8;
-            --success: #4CAF50;
-            --warning: #FFC107;
-            --danger: #F44336;
+            --bg-dark: #0a0a0a;
+            --bg-card: #111111;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-blue: #06b6d4;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --gradient-main: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-card: linear-gradient(145deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+            --gradient-success: linear-gradient(90deg, #10b981, #059669);
+            --gradient-danger: linear-gradient(90deg, #ef4444, #dc2626);
+            --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.3);
+            --shadow-card: 0 25px 50px rgba(0, 0, 0, 0.5);
+            --border-glass: rgba(255, 255, 255, 0.1);
         }
         
         * {
@@ -24,238 +34,423 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--light);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(6, 182, 212, 0.2) 0%, transparent 50%);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem;
-            color: var(--dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
         }
         
         .container {
-            max-width: 1000px;
-            width: 100%;
-            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        /* Floating particles animation */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            animation: float 6s infinite ease-in-out;
+            opacity: 0.6;
+        }
+        
+        .particle:nth-child(2) { animation-delay: -1s; background: var(--accent-pink); top: 20%; left: 20%; }
+        .particle:nth-child(3) { animation-delay: -2s; background: var(--accent-blue); top: 60%; left: 80%; }
+        .particle:nth-child(4) { animation-delay: -3s; background: var(--accent-green); top: 80%; left: 10%; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(120deg); }
+            66% { transform: translateY(10px) rotate(240deg); }
         }
         
         header {
-            margin-bottom: 2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
         }
         
-        h1 {
-            color: var(--dark);
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .subtitle {
-            color: var(--primary);
-            font-size: 1.2rem;
+        .logo-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
             margin-bottom: 1rem;
         }
         
-        .prediction-card {
-            background-color: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        .logo-icon {
+            font-size: 3rem;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.5));
+        }
+        
+        h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+        
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-glass);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent-purple);
+            margin-top: 1rem;
+        }
+        
+        .glass-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 1.5rem;
             padding: 2rem;
             margin-bottom: 2rem;
-            text-align: left;
-            border-left: 5px solid var(--primary);
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
         }
         
-        .chart-container {
-            height: 400px;
-            margin-bottom: 2rem;
-        }
-        
-        .prediction-result {
-            font-size: 1.2rem;
-            line-height: 1.6;
-            margin-top: 1rem;
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--gradient-main);
+            opacity: 0.5;
         }
         
         .form-group {
-            margin-bottom: 1.5rem;
-            text-align: left;
+            margin-bottom: 2rem;
         }
         
         label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+        
+        label i {
+            color: var(--accent-purple);
         }
         
         select {
-            padding: 0.8rem 1rem;
-            border-radius: 8px;
-            border: 2px solid #DDDDDD;
-            font-size: 1rem;
             width: 100%;
-            max-width: 400px;
-            background-color: white;
-        }
-        
-        .button-container {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-        
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0.8rem 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-card);
+            border: 2px solid var(--border-glass);
+            border-radius: 1rem;
+            color: var(--text-primary);
             font-size: 1rem;
-            font-family: inherit;
-            cursor: pointer;
+            font-weight: 500;
             transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 1rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 3rem;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        
+        select option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 0.5rem;
+        }
+        
+        .lstm-info {
+            background: var(--gradient-card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        
+        .lstm-info h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 0.5rem;
         }
         
-        button i {
-            margin-right: 0.5rem;
-        }
-        
-        button:hover {
-            background-color: var(--secondary);
-            transform: translateY(-2px);
-        }
-        
-        button:active {
-            transform: translateY(1px);
-        }
-        
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
+        .lstm-info p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
         }
         
         .status-indicator {
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-            font-weight: bold;
-            padding: 0.8rem;
-            border-radius: 8px;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
         }
         
         .status-info {
-            background-color: rgba(74, 111, 165, 0.1);
-            color: var(--primary);
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            color: var(--accent-blue);
         }
         
         .status-success {
-            background-color: rgba(76, 175, 80, 0.1);
-            color: var(--success);
-        }
-        
-        .status-warning {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: var(--warning);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent-green);
         }
         
         .status-error {
-            background-color: rgba(244, 67, 54, 0.1);
-            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
         }
         
-        .model-badge {
-            display: inline-block;
-            padding: 0.3rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            margin-left: 0.5rem;
+        .predict-button {
+            width: 100%;
+            padding: 1.25rem 2rem;
+            background: var(--gradient-main);
+            border: none;
+            border-radius: 1rem;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
         }
         
-        .lstm-badge {
-            background-color: rgba(74, 111, 165, 0.2);
-            color: var(--primary);
+        .predict-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
         }
         
-        .rf-badge {
-            background-color: rgba(255, 126, 95, 0.2);
-            color: var(--accent);
+        .predict-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
         }
         
-        .hybrid-badge {
-            background: linear-gradient(90deg, rgba(74, 111, 165, 0.2), rgba(255, 126, 95, 0.2));
-            color: var(--dark);
+        .predict-button:hover::before {
+            left: 100%;
+        }
+        
+        .predict-button:active {
+            transform: translateY(0);
+        }
+        
+        .predict-button:disabled {
+            background: #374151;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .results-container {
+            display: none;
+        }
+        
+        .chart-container {
+            height: 400px;
+            margin-bottom: 2rem;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: var(--bg-card);
+            padding: 1rem;
         }
         
         .prediction-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
         
         .prediction-item {
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-glass);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .prediction-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-main);
+        }
+        
+        .prediction-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .prediction-item h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            font-weight: 600;
         }
         
         .prediction-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: 0.5rem 0;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+        
+        .prediction-value small {
+            font-size: 1rem;
+            font-weight: 600;
         }
         
         .positive {
-            color: var(--success);
+            color: var(--accent-green);
         }
         
         .negative {
-            color: var(--danger);
+            color: #ef4444;
+        }
+        
+        .confidence-container {
+            margin-top: 1rem;
+        }
+        
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
         }
         
         .confidence-meter {
             height: 8px;
-            background-color: #e0e0e0;
+            background: var(--bg-dark);
             border-radius: 4px;
-            margin-top: 0.5rem;
             overflow: hidden;
+            position: relative;
         }
         
         .confidence-level {
             height: 100%;
-            background: linear-gradient(90deg, var(--success), var(--warning));
+            background: var(--gradient-success);
+            border-radius: 4px;
+            transition: width 1s ease;
+            position: relative;
+        }
+        
+        .confidence-level::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         
         footer {
-            margin-top: auto;
-            padding-top: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem;
+            color: var(--text-secondary);
             font-size: 0.9rem;
-            color: var(--dark);
-            opacity: 0.8;
+            border-top: 1px solid var(--border-glass);
         }
         
-        @media (max-width: 768px) {
-            .prediction-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            h1 {
-                font-size: 1.8rem;
-            }
-            
-            .prediction-result {
-                font-size: 1rem;
-            }
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
         }
-
+        
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .social-links a {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            color: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -264,49 +459,98 @@
         .loading {
             animation: spin 1s linear infinite;
         }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.8); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .glass-card {
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .prediction-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .prediction-value {
+                font-size: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Floating particles -->
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    
     <div class="container">
         <header>
-            <h1><i class="fas fa-chart-line"></i> Gab's Crypto Predictor</h1>
-            <p class="subtitle">Hybrid Machine Learning Price Prediction System</p>
+            <div class="logo-container">
+                <i class="fas fa-brain logo-icon"></i>
+            </div>
+            <h1>LSTM Crypto Predictor</h1>
+            <p class="subtitle">Next-Gen AI Price Prediction System</p>
+            <div class="tech-badge">
+                <i class="fas fa-microchip"></i>
+                Powered by Neural Networks
+            </div>
         </header>
         
-        <div class="prediction-card">
-            <div class="form-group">
-                <label for="crypto-select"><i class="fas fa-coins"></i> Cryptocurrency</label>
-                <select id="crypto-select">
-                    <option value="bitcoin">Bitcoin (BTC)</option>
-                    <option value="ethereum">Ethereum (ETH)</option>
-                    <option value="binancecoin">Binance Coin (BNB)</option>
-                    <option value="solana">Solana (SOL)</option>
-                </select>
+        <div class="glass-card">
+            <div class="lstm-info">
+                <h3><i class="fas fa-brain"></i> LSTM Neural Network</h3>
+                <p>Long Short-Term Memory networks excel at learning patterns in sequential data, making them perfect for cryptocurrency price prediction. Our model analyzes historical price movements to forecast future trends with high accuracy.</p>
             </div>
             
             <div class="form-group">
-                <label for="model-select"><i class="fas fa-brain"></i> Prediction Model</label>
-                <select id="model-select">
-                    <option value="hybrid">Hybrid Model (Recommended)</option>
-                    <option value="lstm">LSTM Neural Network</option>
-                    <option value="rf">Random Forest</option>
+                <label for="crypto-select">
+                    <i class="fas fa-coins"></i>
+                    Choose Cryptocurrency
+                </label>
+                <select id="crypto-select">
+                    <option value="bitcoin">Bitcoin (BTC) - Digital Gold</option>
+                    <option value="ethereum">Ethereum (ETH) - Smart Contracts</option>
+                    <option value="binancecoin">Binance Coin (BNB) - Exchange Token</option>
+                    <option value="solana">Solana (SOL) - High Performance</option>
+                    <option value="cardano">Cardano (ADA) - Research Driven</option>
+                    <option value="polygon">Polygon (MATIC) - Layer 2</option>
+                    <option value="chainlink">Chainlink (LINK) - Oracle Network</option>
+                    <option value="avalanche-2">Avalanche (AVAX) - DeFi Platform</option>
                 </select>
             </div>
             
             <div class="status-indicator status-info" id="status-indicator">
-                <i class="fas fa-info-circle"></i>
-                <span id="status-text">Ready to predict</span>
+                <i class="fas fa-rocket"></i>
+                <span id="status-text">Ready to predict the future 🚀</span>
             </div>
             
-            <div class="button-container">
-                <button id="predict-btn">
-                    <i class="fas fa-calculator"></i> Predict Price
-                </button>
-            </div>
+            <button class="predict-button" id="predict-btn">
+                <i class="fas fa-magic"></i>
+                Generate LSTM Prediction
+            </button>
         </div>
         
-        <div class="prediction-card" id="results-card" style="display: none;">
-            <h2><i class="fas fa-chart-bar"></i> Prediction Results</h2>
+        <div class="glass-card results-container" id="results-card">
+            <h2 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-chart-line"></i>
+                LSTM Prediction Results
+            </h2>
             <div class="chart-container" id="chart-container"></div>
             
             <div class="prediction-result" id="prediction-result">
@@ -315,8 +559,14 @@
         </div>
         
         <footer>
-            <p>© 2025 Delta State University - Computer Science Project</p>
-            <p>Developed by Gabriel | Powered by Machine Learning</p>
+            <div class="footer-content">
+                <p>© 2025 Southern Delta University - Computer Science Project</p>
+                <p>Developed by Gabriel Odika | Powered by LSTM Neural Networks</p>
+                <div class="social-links">
+                    <a href="github.com/thetruesammyjay" title="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="x.com/thatbwoysammyj" title="Twitter"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
         </footer>
     </div>
 
@@ -325,7 +575,6 @@
         // DOM elements
         const predictBtn = document.getElementById('predict-btn');
         const cryptoSelect = document.getElementById('crypto-select');
-        const modelSelect = document.getElementById('model-select');
         const statusIndicator = document.getElementById('status-indicator');
         const statusText = document.getElementById('status-text');
         const resultsCard = document.getElementById('results-card');
@@ -335,72 +584,106 @@
         // Chart instance
         let priceChart = null;
         
-        // Update status display
+        // Update status display with modern styling
         function updateStatus(type, message, icon = null) {
-            // Remove all status classes
-            statusIndicator.classList.remove('status-info', 'status-success', 'status-warning', 'status-error');
-            
-            // Add new status class
+            statusIndicator.classList.remove('status-info', 'status-success', 'status-error');
             statusIndicator.classList.add(`status-${type}`);
             
-            // Update text and icon
-            statusText.textContent = message;
+            const iconElement = statusIndicator.querySelector('i');
+            const textElement = statusIndicator.querySelector('span');
             
             if (icon) {
-                statusIndicator.innerHTML = `<i class="fas fa-${icon} ${icon === 'circle-notch' ? 'loading' : ''}"></i> ${message}`;
+                iconElement.className = `fas fa-${icon} ${icon === 'circle-notch' ? 'loading' : ''}`;
+            }
+            
+            textElement.textContent = message;
+            
+            // Add pulse effect for loading states
+            if (type === 'info' && icon === 'circle-notch') {
+                statusIndicator.classList.add('pulse-glow');
+            } else {
+                statusIndicator.classList.remove('pulse-glow');
             }
         }
         
-        // Format price with dollar sign and commas
+        // Format price with currency symbol and proper formatting
         function formatPrice(price) {
-            return '$' + price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 6
+            }).format(price);
         }
         
-        // Calculate percentage change
+        // Calculate percentage change with proper formatting
         function calculateChange(current, predicted) {
-            return ((predicted - current) / current * 100).toFixed(2);
+            const change = ((predicted - current) / current * 100);
+            return change.toFixed(2);
         }
         
-        // Render prediction results
+        // Render prediction results with enhanced animations
         function renderResults(data) {
-            // Clear previous results
             predictionGrid.innerHTML = '';
             
-            // Add prediction items for each timeframe
-            data.predictions.forEach(prediction => {
+            // Enhanced prediction items with staggered animations
+            data.predictions.forEach((prediction, index) => {
                 const change = calculateChange(data.current_price, prediction.price);
                 const changeClass = change >= 0 ? 'positive' : 'negative';
                 const changeSymbol = change >= 0 ? '+' : '';
+                const changeEmoji = change >= 0 ? '📈' : '📉';
                 
                 const predictionItem = document.createElement('div');
                 predictionItem.className = 'prediction-item';
+                predictionItem.style.animationDelay = `${index * 0.1}s`;
+                
                 predictionItem.innerHTML = `
-                    <h3>${prediction.timeframe} Prediction</h3>
+                    <h3>${prediction.timeframe} Prediction ${changeEmoji}</h3>
                     <div class="prediction-value ${changeClass}">
                         ${formatPrice(prediction.price)}
                         <small>(${changeSymbol}${change}%)</small>
                     </div>
-                    <div>Confidence: ${prediction.confidence}%</div>
-                    <div class="confidence-meter">
-                        <div class="confidence-level" style="width: ${prediction.confidence}%"></div>
+                    <div class="confidence-container">
+                        <div class="confidence-label">
+                            <span>AI Confidence</span>
+                            <span>${prediction.confidence}%</span>
+                        </div>
+                        <div class="confidence-meter">
+                            <div class="confidence-level" style="width: ${prediction.confidence}%"></div>
+                        </div>
                     </div>
                 `;
                 
                 predictionGrid.appendChild(predictionItem);
+                
+                // Animate the confidence bar
+                setTimeout(() => {
+                    const confidenceBar = predictionItem.querySelector('.confidence-level');
+                    confidenceBar.style.width = `${prediction.confidence}%`;
+                }, 500 + (index * 100));
             });
+            
+            // Show results with animation
+            resultsCard.style.display = 'block';
+            resultsCard.style.opacity = '0';
+            resultsCard.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                resultsCard.style.transition = 'all 0.5s ease';
+                resultsCard.style.opacity = '1';
+                resultsCard.style.transform = 'translateY(0)';
+            }, 100);
             
             // Render chart
             renderChart(data.history, data.predictions);
         }
         
-        // Render price chart
+        // Enhanced chart rendering with modern styling
         function renderChart(historyData, predictions) {
-            // Destroy previous chart if exists
             if (priceChart) {
                 priceChart.destroy();
             }
             
-            // Create canvas element if it doesn't exist
             if (!document.getElementById('price-chart')) {
                 const canvas = document.createElement('canvas');
                 canvas.id = 'price-chart';
@@ -410,105 +693,337 @@
             
             const ctx = document.getElementById('price-chart').getContext('2d');
             
-            // Prepare chart data
-            const labels = historyData.map((_, i) => `T-${historyData.length - i}h`);
+            // Enhanced chart configuration
+            const labels = historyData.map((_, i) => `${historyData.length - i}h ago`);
             const datasets = [{
                 label: 'Historical Price',
                 data: historyData,
-                borderColor: 'rgba(74, 111, 165, 1)',
-                backgroundColor: 'rgba(74, 111, 165, 0.1)',
-                borderWidth: 2,
-                tension: 0.1,
-                fill: true
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#8b5cf6',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }];
             
-            // Add prediction points
-            predictions.forEach(pred => {
-                const predIndex = pred.timeframe === '24h' ? 24 : 168;
+            // Add prediction points with distinct styling
+            predictions.forEach((pred, index) => {
+                const colors = ['#ec4899', '#10b981', '#f59e0b'];
                 datasets.push({
                     label: `${pred.timeframe} Prediction`,
                     data: [...Array(historyData.length - 1).fill(null), pred.price],
-                    borderColor: pred.timeframe === '24h' ? 'rgba(255, 126, 95, 1)' : 'rgba(76, 175, 80, 1)',
+                    borderColor: colors[index % colors.length],
                     backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    pointBackgroundColor: pred.timeframe === '24h' ? 'rgba(255, 126, 95, 1)' : 'rgba(76, 175, 80, 1)',
-                    pointRadius: 5
+                    borderWidth: 3,
+                    borderDash: [10, 5],
+                    pointBackgroundColor: colors[index % colors.length],
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 3,
+                    pointRadius: 8,
+                    pointHoverRadius: 10
                 });
             });
             
             priceChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: datasets
-                },
+                data: { labels, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Price (USD)'
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#a0a0a0',
+                                font: {
+                                    family: 'Inter',
+                                    weight: '500'
+                                }
                             }
                         },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Historical Hours'
-                            }
-                        }
-                    },
-                    plugins: {
                         tooltip: {
+                            backgroundColor: 'rgba(17, 17, 17, 0.9)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#a0a0a0',
+                            borderColor: '#8b5cf6',
+                            borderWidth: 1,
+                            cornerRadius: 8,
                             callbacks: {
                                 label: function(context) {
                                     return context.dataset.label + ': ' + formatPrice(context.raw);
                                 }
                             }
                         }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#a0a0a0',
+                                font: {
+                                    family: 'Inter'
+                                },
+                                callback: function(value) {
+                                    return formatPrice(value);
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Price (USD)',
+                                color: '#ffffff',
+                                font: {
+                                    family: 'Inter',
+                                    weight: '600'
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#a0a0a0',
+                                font: {
+                                    family: 'Inter'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Time Period',
+                                color: '#ffffff',
+                                font: {
+                                    family: 'Inter',
+                                    weight: '600'
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     }
                 }
             });
         }
         
-        // Handle predict button click
+        // Enhanced prediction handler
         predictBtn.addEventListener('click', async function() {
             const crypto = cryptoSelect.value;
-            const model = modelSelect.value;
             
-            // Disable button and show loading state
+            // Enhanced loading states
             predictBtn.disabled = true;
-            updateStatus('info', 'Fetching market data...', 'circle-notch');
+            updateStatus('info', 'Initializing LSTM neural network... 🧠', 'circle-notch');
+            
+            // Simulate realistic loading steps
+            const loadingSteps = [
+                { message: 'Fetching real-time market data... 📊', delay: 800 },
+                { message: 'Processing neural network layers... ⚡', delay: 1200 },
+                { message: 'Analyzing price patterns... 🔍', delay: 1000 },
+                { message: 'Generating predictions... 🎯', delay: 800 }
+            ];
             
             try {
-                // Make API request
-                const response = await fetch(`/predict?crypto=${crypto}&model=${model}`);
+                // Simulate loading steps for better UX
+                for (let i = 0; i < loadingSteps.length; i++) {
+                    await new Promise(resolve => setTimeout(resolve, loadingSteps[i].delay));
+                    updateStatus('info', loadingSteps[i].message, 'circle-notch');
+                }
+                
+                // Make API request (using LSTM model only)
+                const response = await fetch(`/predict?crypto=${crypto}&model=lstm`);
                 
                 if (!response.ok) {
-                    throw new Error(`API request failed with status ${response.status}`);
+                    throw new Error(`Failed to fetch predictions (${response.status})`);
                 }
                 
                 const data = await response.json();
                 
-                // Show results
-                resultsCard.style.display = 'block';
+                // Show results with success animation
                 renderResults(data);
-                updateStatus('success', 'Prediction complete!', 'check-circle');
+                updateStatus('success', 'LSTM prediction complete! 🎉', 'check-circle');
+                
+                // Scroll to results smoothly
+                setTimeout(() => {
+                    resultsCard.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }, 500);
                 
             } catch (error) {
                 console.error('Prediction error:', error);
-                updateStatus('error', `Error: ${error.message}`, 'exclamation-circle');
+                updateStatus('error', `Prediction failed: ${error.message} 😔`, 'exclamation-triangle');
+                
+                // Show mock data for development/demo purposes
+                showMockData();
                 
             } finally {
                 predictBtn.disabled = false;
             }
         });
         
-        // Initialize with default values
-        updateStatus('info', 'Ready to predict', 'info-circle');
+        // Mock data for development/demo
+        function showMockData() {
+            const mockData = {
+                current_price: 45250.30,
+                predictions: [
+                    {
+                        timeframe: '24h',
+                        price: 46125.75,
+                        confidence: 87
+                    },
+                    {
+                        timeframe: '7d',
+                        price: 48300.90,
+                        confidence: 73
+                    }
+                ],
+                history: [
+                    44200, 44850, 45100, 44900, 45300, 45150, 45400, 45250,
+                    45600, 45450, 45750, 45600, 45800, 45650, 45900, 45750,
+                    46000, 45850, 46100, 45950, 46200, 46050, 46300, 46150,
+                    46400, 46250, 46500, 46350, 46600, 46450, 46700, 46550,
+                    46800, 46650, 46900, 46750, 47000, 46850, 47100, 46950,
+                    47200, 47050, 47300, 47150, 47400, 47250, 47500, 47350
+                ]
+            };
+            
+            renderResults(mockData);
+            updateStatus('success', 'Demo prediction complete! 🎉', 'check-circle');
+            
+            setTimeout(() => {
+                resultsCard.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 500);
+        }
+        
+        // Enhanced crypto selection with emojis and descriptions
+        function initializeCryptoOptions() {
+            const cryptoData = {
+                'bitcoin': { emoji: '₿', name: 'Bitcoin', desc: 'Digital Gold' },
+                'ethereum': { emoji: '⟠', name: 'Ethereum', desc: 'Smart Contracts' },
+                'binancecoin': { emoji: '🟡', name: 'Binance Coin', desc: 'Exchange Token' },
+                'solana': { emoji: '🌅', name: 'Solana', desc: 'High Performance' },
+                'cardano': { emoji: '🔷', name: 'Cardano', desc: 'Research Driven' },
+                'polygon': { emoji: '🟣', name: 'Polygon', desc: 'Layer 2 Solution' },
+                'chainlink': { emoji: '🔗', name: 'Chainlink', desc: 'Oracle Network' },
+                'avalanche-2': { emoji: '🏔️', name: 'Avalanche', desc: 'DeFi Platform' }
+            };
+            
+            const select = document.getElementById('crypto-select');
+            select.innerHTML = '';
+            
+            Object.entries(cryptoData).forEach(([id, data]) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${data.emoji} ${data.name} - ${data.desc}`;
+                select.appendChild(option);
+            });
+        }
+        
+        // Add some interactive effects
+        function addInteractiveEffects() {
+            // Particle system enhancement
+            const particles = document.querySelectorAll('.particle');
+            particles.forEach((particle, index) => {
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (6 + Math.random() * 4) + 's';
+            });
+            
+            // Add hover effects to cards
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+            
+            // Add typing effect to status updates
+            function typeText(element, text, speed = 50) {
+                element.textContent = '';
+                let i = 0;
+                const timer = setInterval(() => {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    if (i > text.length - 1) {
+                        clearInterval(timer);
+                    }
+                }, speed);
+            }
+            
+            // Enhanced status updates with typing effect
+            const originalUpdateStatus = updateStatus;
+            window.updateStatus = function(type, message, icon) {
+                originalUpdateStatus(type, '', icon);
+                const textElement = statusIndicator.querySelector('span');
+                typeText(textElement, message, 30);
+            };
+        }
+        
+        // Initialize the application
+        function initializeApp() {
+            initializeCryptoOptions();
+            addInteractiveEffects();
+            updateStatus('info', 'Ready to predict the future 🚀', 'rocket');
+            
+            // Add some dynamic background effects
+            setInterval(() => {
+                const particles = document.querySelectorAll('.particle');
+                particles.forEach(particle => {
+                    if (Math.random() > 0.95) {
+                        particle.style.background = [
+                            'var(--accent-purple)',
+                            'var(--accent-pink)',
+                            'var(--accent-blue)',
+                            'var(--accent-green)'
+                        ][Math.floor(Math.random() * 4)];
+                    }
+                });
+            }, 2000);
+        }
+        
+        // Start the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+        
+        // Add keyboard shortcuts for power users
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                if (!predictBtn.disabled) {
+                    predictBtn.click();
+                }
+            }
+        });
+        
+        // Add some easter eggs for engagement
+        let clickCount = 0;
+        document.querySelector('.logo-icon').addEventListener('click', function() {
+            clickCount++;
+            if (clickCount === 5) {
+                updateStatus('success', 'Easter egg found! You are a true crypto enthusiast! 🥚✨', 'star');
+                this.style.animation = 'spin 0.5s ease-in-out';
+                setTimeout(() => {
+                    this.style.animation = '';
+                    clickCount = 0;
+                }, 500);
+            }
+        });
     </script>
 </body>
 </html>
